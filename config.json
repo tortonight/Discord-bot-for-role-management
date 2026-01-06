@@ -1,0 +1,54 @@
+{
+  "guildId": "1443821243370573836",
+  "channels": {
+    "welcome": "1450740869765283943",
+    "rules": "1450740897409097818",
+    "howToJoin": "1450740927188480010",
+    "faq": "1450740981307265045",
+    "donationInfo": "1450741012034023464",
+    "ticketSupport": "1450741032170205234",
+    "announcements": "1450740961050103898",
+    "generalChat": "1450741084950831145",
+    "reportCenter": "1450741160757821501",
+    "tradingMarket": "1450741260888174652"
+  },
+  "squadCategoryId": "1450742617749979179",
+  "roles": {
+    "Admin": {
+      "name": "Admin",
+      "color": "#FF0000"
+    },
+    "Moderator": {
+      "name": "Moderator",
+      "color": "#FFA500"
+    },
+    "GM": {
+      "name": "GM",
+      "color": "#FFFF00"
+    },
+    "Verified": {
+      "name": "Verified",
+      "color": "#00FF00"
+    },
+    "Unverified": {
+      "name": "Unverified",
+      "color": "#808080"
+    },
+    "SCUM Player": {
+      "name": "SCUM Player",
+      "color": "#0000FF"
+    },
+    "VIP": {
+      "name": "VIP",
+      "color": "#FF00FF"
+    },
+    "Muted": {
+      "name": "Muted",
+      "color": "#000000"
+    },
+    "Bot": {
+      "name": "Bot",
+      "color": "#00FFFF"
+    }
+  }
+}
