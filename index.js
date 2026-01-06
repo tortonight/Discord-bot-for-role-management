@@ -68,9 +68,9 @@ client.on('interactionCreate', async (interaction) => {
       await handleModalSubmit(interaction);
     }
   } catch (error) {
-    console.error('Error handling interaction:', error);
+    console.error('Error handling interaction:', error.message, error.stack);
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ content: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', ephemeral: true });
+      await interaction.reply({ content: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง / An error occurred. Please try again.', ephemeral: true });
     }
   }
 });
@@ -86,7 +86,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       if (members.size > 6) {
         // Disconnect the member who just joined
         await newState.member.voice.disconnect();
-        await newState.member.send('ไม่สามารถเข้าร่วม Squad นี้ได้ เนื่องจากมีสมาชิกครบ 6 คนแล้ว').catch(() => {});
+        await newState.member.send('ไม่สามารถเข้าร่วม Squad นี้ได้ เนื่องจากมีสมาชิกครบ 6 คนแล้ว / Cannot join this Squad because it has reached the 6-member limit.').catch(() => {});
         return;
       }
     }
@@ -128,7 +128,8 @@ async function setupRoles(guild) {
       console.log(`Created role: ${roleConfig.name}`);
     } else {
       // Update color if it exists
-      if (role.color !== parseInt(roleConfig.color.replace('#', '0x'))) {
+      const expectedColor = parseInt(roleConfig.color.replace('#', ''), 16);
+      if (role.color !== expectedColor) {
         await role.setColor(roleConfig.color);
         console.log(`Updated color for role: ${roleConfig.name}`);
       }
@@ -819,8 +820,13 @@ async function createTicket(interaction) {
   
   await interaction.deferReply({ ephemeral: true });
   
-  // Sanitize username
-  const sanitizedUsername = member.user.username.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  // Sanitize username - allow alphanumeric and limit length
+  const sanitizedUsername = member.user.username
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 20);
   const channelName = `ticket-${sanitizedUsername}`;
   
   // Get Admin role
