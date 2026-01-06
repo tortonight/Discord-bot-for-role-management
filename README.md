@@ -69,6 +69,13 @@ DISCORD_TOKEN=your_bot_token_here
    - The file includes pre-configured IDs for guild 1443821243370573836
    - Update channel IDs if you're using a different server
 
+6. Test the configuration (optional):
+```bash
+npm test
+```
+
+This will verify that all configuration files are properly set up.
+
 ### Bot Permissions
 
 The bot requires the following permissions:
