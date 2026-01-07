@@ -183,9 +183,16 @@ In your squad's text channel:
 - Verify the token in `.env` is correct
 - Check console for error messages
 
+### Interaction Failed / "การโต้ตอบนี้ล้มเหลว"
+- **Verify button fails**: Ensure the bot's role is positioned higher than "Verified" and "Unverified" roles in the server's role hierarchy
+- **Role not found**: Check that roles were created during bot startup (look for "Created role:" messages in console)
+- **Permission denied**: Bot needs "Manage Roles" permission
+- **Timing issue**: If bot just started, wait a few seconds and try again
+
 ### Roles not being assigned
 - Ensure bot's role is higher than the roles it's trying to assign
 - Check bot has "Manage Roles" permission
+- Verify roles exist (check role list in server settings)
 
 ### Channels not being created
 - Verify bot has "Manage Channels" permission
@@ -194,6 +201,7 @@ In your squad's text channel:
 ### Buttons not working
 - Ensure bot has "Send Messages" and "Read Message History" permissions
 - Check console for interaction errors
+- Try restarting the bot to re-post button panels
 
 ## License
 

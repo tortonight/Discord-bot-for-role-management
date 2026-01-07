@@ -352,19 +352,42 @@ async function handleButtonInteraction(interaction) {
     const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
     const unverifiedRole = guild.roles.cache.find(r => r.name === 'Unverified');
     
+    if (!verifiedRole || !unverifiedRole) {
+      return await interaction.reply({ 
+        content: '❌ ไม่พบบทบาทที่จำเป็น กรุณาติดต่อผู้ดูแลระบบ / Required roles not found. Please contact an administrator.', 
+        ephemeral: true 
+      });
+    }
+    
     if (member.roles.cache.has(verifiedRole.id)) {
       return await interaction.reply({ content: 'คุณได้รับการยืนยันแล้ว!', ephemeral: true });
     }
     
-    await member.roles.add(verifiedRole);
-    await member.roles.remove(unverifiedRole);
-    
-    await interaction.reply({ content: '✅ ยืนยันสำเร็จ! ยินดีต้อนรับสู่เซิร์ฟเวอร์', ephemeral: true });
+    try {
+      await member.roles.add(verifiedRole);
+      if (unverifiedRole && member.roles.cache.has(unverifiedRole.id)) {
+        await member.roles.remove(unverifiedRole);
+      }
+      await interaction.reply({ content: '✅ ยืนยันสำเร็จ! ยินดีต้อนรับสู่เซิร์ฟเวอร์', ephemeral: true });
+    } catch (error) {
+      console.error('Error assigning Verified role:', error);
+      await interaction.reply({ 
+        content: '❌ ไม่สามารถกำหนดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ / Unable to assign role. Please contact an administrator.', 
+        ephemeral: true 
+      });
+    }
   }
   
   else if (customId === 'scum_player') {
     const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
     const scumPlayerRole = guild.roles.cache.find(r => r.name === 'SCUM Player');
+    
+    if (!verifiedRole || !scumPlayerRole) {
+      return await interaction.reply({ 
+        content: '❌ ไม่พบบทบาทที่จำเป็น กรุณาติดต่อผู้ดูแลระบบ / Required roles not found. Please contact an administrator.', 
+        ephemeral: true 
+      });
+    }
     
     if (!member.roles.cache.has(verifiedRole.id)) {
       return await interaction.reply({ content: '❌ คุณต้องยืนยันตัวตนก่อน! กรุณาไปที่ช่อง #rules', ephemeral: true });
@@ -374,8 +397,16 @@ async function handleButtonInteraction(interaction) {
       return await interaction.reply({ content: 'คุณมียศ SCUM Player แล้ว!', ephemeral: true });
     }
     
-    await member.roles.add(scumPlayerRole);
-    await interaction.reply({ content: '✅ คุณได้รับยศ SCUM Player แล้ว!', ephemeral: true });
+    try {
+      await member.roles.add(scumPlayerRole);
+      await interaction.reply({ content: '✅ คุณได้รับยศ SCUM Player แล้ว!', ephemeral: true });
+    } catch (error) {
+      console.error('Error assigning SCUM Player role:', error);
+      await interaction.reply({ 
+        content: '❌ ไม่สามารถกำหนดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ / Unable to assign role. Please contact an administrator.', 
+        ephemeral: true 
+      });
+    }
   }
   
   else if (customId === 'create_squad') {
