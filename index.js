@@ -63,6 +63,7 @@ client.on('guildMemberAdd', async (member) => {
 client.on('interactionCreate', async (interaction) => {
   try {
     if (interaction.isButton()) {
+      console.log(`Button interaction: ${interaction.customId} by ${interaction.user?.tag ?? interaction.user?.id} in ${interaction.guildId ?? 'DM'} msg=${interaction.message?.id ?? 'n/a'}`);
       await handleButtonInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
       await handleModalSubmit(interaction);
@@ -217,11 +218,19 @@ async function postVerificationButton(guild) {
   const channel = await guild.channels.fetch(config.channels.rules).catch(() => null);
   if (!channel) return;
   
-  // Delete old bot messages
-  const messages = await channel.messages.fetch({ limit: 10 });
-  for (const [, msg] of messages) {
-    if (msg.author.id === client.user.id) {
-      await msg.delete().catch(() => {});
+  // Delete old verification posts (including older bot instances)
+  const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  if (messages) {
+    for (const [, msg] of messages) {
+      const hasVerifyButton = msg.components?.some(row =>
+        row.components?.some(component =>
+          component?.customId === 'verify' || (typeof component?.customId === 'string' && component.customId.startsWith('btn_verify_rules'))
+        )
+      );
+
+      if (msg.author?.bot && hasVerifyButton) {
+        await msg.delete().catch(() => {});
+      }
     }
   }
   
@@ -239,19 +248,27 @@ async function postVerificationButton(guild) {
         .setEmoji('✅')
     );
   
-  await channel.send({ embeds: [embed], components: [row] });
-  console.log('Posted verification button in #rules');
+  const sent = await channel.send({ embeds: [embed], components: [row] });
+  console.log(`Posted verification button in #rules (messageId=${sent.id})`);
 }
 
 async function postScumPlayerButton(guild) {
   const channel = await guild.channels.fetch(config.channels.howToJoin).catch(() => null);
   if (!channel) return;
   
-  // Delete old bot messages
-  const messages = await channel.messages.fetch({ limit: 10 });
-  for (const [, msg] of messages) {
-    if (msg.author.id === client.user.id) {
-      await msg.delete().catch(() => {});
+  // Delete old SCUM Player posts (including older bot instances)
+  const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  if (messages) {
+    for (const [, msg] of messages) {
+      const hasScumButton = msg.components?.some(row =>
+        row.components?.some(component =>
+          component?.customId === 'scum_player' || (typeof component?.customId === 'string' && component.customId.startsWith('btn_scum_player'))
+        )
+      );
+
+      if (msg.author?.bot && hasScumButton) {
+        await msg.delete().catch(() => {});
+      }
     }
   }
   
@@ -269,8 +286,8 @@ async function postScumPlayerButton(guild) {
         .setEmoji('🎮')
     );
   
-  await channel.send({ embeds: [embed], components: [row] });
-  console.log('Posted SCUM Player button in #how-to-join');
+  const sent = await channel.send({ embeds: [embed], components: [row] });
+  console.log(`Posted SCUM Player button in #how-to-join (messageId=${sent.id})`);
 }
 
 async function postSquadButton(guild) {
@@ -346,21 +363,29 @@ async function postTicketButton(guild) {
 }
 
 async function handleButtonInteraction(interaction) {
-  const { customId, member, guild } = interaction;
+  const { customId } = interaction;
   
-  if (customId === 'verify') {
+  if (customId === 'verify' || (typeof customId === 'string' && customId.startsWith('btn_verify_rules'))) {
+    if (!interaction.inGuild()) {
+      return await interaction.reply({ content: '❌ คำสั่งนี้ใช้ได้เฉพาะในเซิร์ฟเวอร์เท่านั้น / This can only be used in a server.', ephemeral: true });
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const guild = interaction.guild;
+    const member = interaction.member;
+
     const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
     const unverifiedRole = guild.roles.cache.find(r => r.name === 'Unverified');
     
     if (!verifiedRole || !unverifiedRole) {
-      return await interaction.reply({ 
+      return await interaction.editReply({ 
         content: '❌ ไม่พบบทบาทที่จำเป็น กรุณาติดต่อผู้ดูแลระบบ / Required roles not found. Please contact an administrator.', 
-        ephemeral: true 
       });
     }
     
     if (member.roles.cache.has(verifiedRole.id)) {
-      return await interaction.reply({ content: 'คุณได้รับการยืนยันแล้ว!', ephemeral: true });
+      return await interaction.editReply({ content: 'คุณได้รับการยืนยันแล้ว!' });
     }
     
     try {
@@ -368,43 +393,49 @@ async function handleButtonInteraction(interaction) {
       if (unverifiedRole && member.roles.cache.has(unverifiedRole.id)) {
         await member.roles.remove(unverifiedRole);
       }
-      await interaction.reply({ content: '✅ ยืนยันสำเร็จ! ยินดีต้อนรับสู่เซิร์ฟเวอร์', ephemeral: true });
+      await interaction.editReply({ content: '✅ ยืนยันสำเร็จ! ยินดีต้อนรับสู่เซิร์ฟเวอร์' });
     } catch (error) {
       console.error('Error assigning Verified role:', error);
-      await interaction.reply({ 
+      await interaction.editReply({ 
         content: '❌ ไม่สามารถกำหนดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ / Unable to assign role. Please contact an administrator.', 
-        ephemeral: true 
       });
     }
   }
   
-  else if (customId === 'scum_player') {
+  else if (customId === 'scum_player' || (typeof customId === 'string' && customId.startsWith('btn_scum_player'))) {
+    if (!interaction.inGuild()) {
+      return await interaction.reply({ content: '❌ คำสั่งนี้ใช้ได้เฉพาะในเซิร์ฟเวอร์เท่านั้น / This can only be used in a server.', ephemeral: true });
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const guild = interaction.guild;
+    const member = interaction.member;
+
     const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
     const scumPlayerRole = guild.roles.cache.find(r => r.name === 'SCUM Player');
     
     if (!verifiedRole || !scumPlayerRole) {
-      return await interaction.reply({ 
+      return await interaction.editReply({ 
         content: '❌ ไม่พบบทบาทที่จำเป็น กรุณาติดต่อผู้ดูแลระบบ / Required roles not found. Please contact an administrator.', 
-        ephemeral: true 
       });
     }
     
     if (!member.roles.cache.has(verifiedRole.id)) {
-      return await interaction.reply({ content: '❌ คุณต้องยืนยันตัวตนก่อน! กรุณาไปที่ช่อง #rules', ephemeral: true });
+      return await interaction.editReply({ content: '❌ คุณต้องยืนยันตัวตนก่อน! กรุณาไปที่ช่อง #rules' });
     }
     
     if (member.roles.cache.has(scumPlayerRole.id)) {
-      return await interaction.reply({ content: 'คุณมียศ SCUM Player แล้ว!', ephemeral: true });
+      return await interaction.editReply({ content: 'คุณมียศ SCUM Player แล้ว!' });
     }
     
     try {
       await member.roles.add(scumPlayerRole);
-      await interaction.reply({ content: '✅ คุณได้รับยศ SCUM Player แล้ว!', ephemeral: true });
+      await interaction.editReply({ content: '✅ คุณได้รับยศ SCUM Player แล้ว!' });
     } catch (error) {
       console.error('Error assigning SCUM Player role:', error);
-      await interaction.reply({ 
+      await interaction.editReply({ 
         content: '❌ ไม่สามารถกำหนดบทบาทได้ กรุณาติดต่อผู้ดูแลระบบ / Unable to assign role. Please contact an administrator.', 
-        ephemeral: true 
       });
     }
   }
