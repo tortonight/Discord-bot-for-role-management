@@ -24,6 +24,9 @@ client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   
   const guild = await client.guilds.fetch(config.guildId);
+
+  // Ensure Support Center category exists and ticket panel is in it
+  await ensureSupportCenterCategory(guild);
   
   // Create roles if they don't exist
   await setupRoles(guild);
@@ -45,6 +48,43 @@ client.once('ready', async () => {
   
   console.log('Bot setup complete!');
 });
+
+async function ensureSupportCenterCategory(guild) {
+  const desiredName = config.supportCenterCategory?.name || '🛠️ SUPPORT CENTER';
+  const configuredId = (config.supportCenterCategory?.id || '').trim();
+
+  let category = null;
+
+  if (configuredId) {
+    const fetched = await guild.channels.fetch(configuredId).catch(() => null);
+    if (fetched && fetched.type === ChannelType.GuildCategory) {
+      category = fetched;
+    }
+  }
+
+  if (!category) {
+    category = guild.channels.cache.find(
+      c => c.type === ChannelType.GuildCategory && c.name === desiredName
+    ) ?? null;
+  }
+
+  if (!category) {
+    category = await guild.channels.create({
+      name: desiredName,
+      type: ChannelType.GuildCategory,
+      reason: 'Automated support center category setup',
+    });
+    console.log(`Created support category: ${desiredName} (${category.id})`);
+  }
+
+  const ticketPanel = await guild.channels.fetch(config.channels.ticketSupport).catch(() => null);
+  if (ticketPanel && ticketPanel.parentId !== category.id) {
+    await ticketPanel.setParent(category.id, { lockPermissions: false }).catch(() => {});
+    console.log(`Moved #ticket-support under category: ${category.name}`);
+  }
+
+  return category;
+}
 
 // Auto-assign Unverified role on member join
 client.on('guildMemberAdd', async (member) => {
@@ -893,11 +933,15 @@ async function createTicket(interaction) {
   
   // Get Admin role
   const adminRole = guild.roles.cache.find(r => r.name === 'Admin');
+
+  // Ensure ticket channels are created under Support Center category
+  const supportCategory = await ensureSupportCenterCategory(guild);
   
   // Create ticket channel
   const ticketChannel = await guild.channels.create({
     name: channelName,
     type: ChannelType.GuildText,
+    parent: supportCategory?.id,
     topic: `Ticket for <@${member.id}>`,
     permissionOverwrites: [
       {

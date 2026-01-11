@@ -36,6 +36,16 @@ try {
   } else {
     console.log('  ⚠ Squad category ID not configured');
   }
+
+  // Verify support center category config (optional)
+  if (config.supportCenterCategory?.name) {
+    console.log(`  ✓ Support Center category name: ${config.supportCenterCategory.name}`);
+    if (config.supportCenterCategory.id) {
+      console.log(`  ✓ Support Center category ID configured: ${config.supportCenterCategory.id}`);
+    } else {
+      console.log('  ℹ Support Center category ID not set (bot will find/create by name)');
+    }
+  }
   
 } catch (error) {
   console.error('✗ Error loading config.json:', error.message);
